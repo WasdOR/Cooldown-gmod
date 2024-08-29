@@ -1,4 +1,4 @@
-# CoolDown foe gmod
+# CoolDown for gmod
 
 Простой аддон который позволяет установить ограничение для спавна обьектов. / 
 A simple addon that allows you to set a limit for spawn objects.
