@@ -1,59 +1,15 @@
-# Project Title
+# CoolDown foe gmod
 
-A short description about the project and/or client.
+Простой аддон который позволяет установить ограничение для спавна обьектов. / A simple addon that allows you to set a limit for spawn objects.
 
-## Getting Started
+### Installation / Установка
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Для установки требуется закинуть папку с файлами по пути: *garrysmod\addons. / To install, you need to upload a folder with files along the path: *garrysmod\addons.
 
-### Prerequisites
+## Usage / Использование
 
-The things you need before installing the software.
+Для открытия меню нипишите в игровой чат !kd. / To open the menu, sign up for the game chat !kd.
 
-* You need this
-* And you need this
-* Oh, and don't forget this
+##P.s
 
-### Installation
-
-A step by step guide that will tell you how to get the development environment up and running.
-
-```
-$ First step
-$ Another step
-$ Final step
-```
-
-## Usage
-
-A few examples of useful commands and/or tasks.
-
-```
-$ First example
-$ Second example
-$ And keep this in mind
-```
-
-## Deployment
-
-Additional notes on how to deploy this on a live or release system. Explaining the most important branches, what pipelines they trigger and how to update the database (if anything special).
-
-### Server
-
-* Live:
-* Release:
-* Development:
-
-### Branches
-
-* Master:
-* Feature:
-* Bugfix:
-* etc...
-
-## Additional Documentation and Acknowledgments
-
-* Project folder on server:
-* Confluence link:
-* Asana board:
-* etc...
+Мой первый аддон, не судите строго, если есть предложение по улучшению пишите в Дискорд: .wasdik.
