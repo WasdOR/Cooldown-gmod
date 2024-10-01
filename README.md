@@ -11,7 +11,7 @@ To install, you need to upload a folder with files along the path: *garrysmod\ad
 ## Usage / Использование
 
 Для открытия меню напишите в игровой чат !kd. / 
-To open the menu, sign up for the game chat !kd.
+To open the menu, say for the game chat !kd.
 
 ## P.s
 
