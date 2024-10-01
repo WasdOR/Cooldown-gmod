@@ -15,7 +15,7 @@ nets("SpawnSentKD_MenuTriggerReturMenu")
 
 local function BlockEntitySpawn(ply, mdl) 
     for _, v in pairs(EntityTable) do 
-        if string.find(mdl, v.name) then 
+        if string.match(mdl, v.name) then 
 
             if playerCooldowns[ply:SteamID64()] and playerCooldowns[ply:SteamID64()][v.name] then 
 
