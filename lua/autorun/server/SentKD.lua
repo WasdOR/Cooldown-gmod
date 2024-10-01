@@ -141,6 +141,7 @@ hook.Add("PlayerSpawnProp", "SpawnProp_Kd_", BlockEntitySpawn)
 hook.Add("PlayerSpawnRagdoll", "SpawnRag_Kd_", BlockEntitySpawn)
 hook.Add("PlayerSpawnNPC", "SpawnNpc_Kd_", BlockEntitySpawn)
 hook.Add("PlayerSpawnSWEP", "SpawnSwep_Kd_", BlockEntitySpawn)
+hook.Add( "PlayerGiveSWEP", "BlockPlayerSWEPs_kd_", BlockEntitySpawn)
 
 
 
