@@ -95,17 +95,14 @@ net.Receive("SpawnSentKD_MenuTriggerReturMenu", function()
 
 end)
 
-hook.Add( "PlayerDisconnected", "PlayerleaveKD", function(ply)
-    
-    if playerCooldowns[ply:SteamID64()] and playerCooldowns[ply:SteamID64()][v.name] then    
-
-        timer.Remove("spawnCooldown_" .. ply:SteamID64())
+hook.Add("PlayerDisconnected", "PlayerleaveKD", function(ply)
+    if playerCooldowns[ply:SteamID64()] then
+        for k, _ in pairs(playerCooldowns[ply:SteamID64()]) do
+            timer.Remove("spawnCooldown_" .. ply:SteamID64() .. "_" .. k)
+        end
         playerCooldowns[ply:SteamID64()] = nil
-        playerCooldowns[ply:SteamID64()][v.name] = nil
-
     end
-
-end )
+end)
 
 hook.Add( "PlayerInitialSpawn", "PlayerJoinKD", function(ply)
     
