@@ -85,7 +85,7 @@ net.Receive("SpawnSentKD_MenuTrigger", function(len, ply)
 
         
 
-    elseif PrivaRead == "superadmin" then
+    else
 
 
         local MainMenu = vui( "DFrame" )
