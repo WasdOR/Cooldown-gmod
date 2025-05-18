@@ -13,6 +13,3 @@ To install, you need to upload a folder with files along the path: *garrysmod\ad
 Для открытия меню напишите в игровой чат !kd. / 
 To open the menu, say for the game chat !kd.
 
-## P.s
-
-Мой первый аддон, не судите строго, если есть предложение по улучшению пишите в Дискорд: .wasdik.
