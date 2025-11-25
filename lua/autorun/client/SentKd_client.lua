@@ -1,233 +1,242 @@
-local vui = vgui.Create
-
-surface.CreateFont("FontWar", {
-    font = "Arial",
-    extended = true,
-    size = 20
-})
-
-surface.CreateFont("FontWarHelp", {
-    font = "Impact",
-    extended = true,
-    size = 15
-})
-
-
-
-net.Receive("SpawnSentKD_", function(len, ply)
-
-    notification.AddLegacy( "Кулдаун завершен, можно спавнить!", NOTIFY_GENERIC, 5 )
-    surface.PlaySound( "buttons/button17.wav" )
-    Msg( "Кулдаун прошел!\n" )
-    
-end)
-
-
-net.Receive("SpawnSentKD_Message", function(len, ply)
-
-    local message = net.ReadString()
-
-    notification.AddLegacy( "Подождите окончания кулдауна: " ..message.. " сек.", NOTIFY_ERROR, 3 )
-    surface.PlaySound( "buttons/button14.wav" )
-    Msg( "Подождите окончания кулдауна!\n" )
-
-end)
-
-
-
-net.Receive("SpawnSentKD_StartMessage", function(len, ply)
-
-    local Timer_Start = net.ReadString()
-
-    notification.AddLegacy( "Подождите " ..Timer_Start.. " секунд до следующего спавна!", NOTIFY_HINT, 5 )
-    surface.PlaySound( "buttons/button15.wav" )
-    Msg( "Подождите!\n" )
-
-end)
-
-net.Receive("SpawnSentKD_MenuTrigger", function(len, ply)
-
-    local PrivaRead = net.ReadString()
-    local EntityTable = net.ReadTable()
-    local plymenu = net.ReadPlayer()
-
-
-    if PrivaRead != "superadmin" then
-
-        local WarningFrame = vui( "DFrame" )
-        WarningFrame:SetPos(ScrW() / 2.22, ScrH() / 2.22)
-        WarningFrame:SetSize( 200, 100 ) 
-        WarningFrame:SetTitle( "" )  
-        WarningFrame:SetDraggable( false ) 
-        WarningFrame:ShowCloseButton( false ) 
-        WarningFrame:MakePopup()
-        WarningFrame.Paint = function(self, w, h)
-
-            draw.RoundedBox(2, 0, 0, w, h, Color(0, 0, 0, 200))
-            
-            draw.SimpleText("Отказано!", "FontWar", 100, 5, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-
-	    end
-
-        local CloseButton = vui( "DButton", WarningFrame )
-        CloseButton:SetText( "Закрыть" )
-        CloseButton:SetPos( 50, 70 )
-        CloseButton:SetSize( 100, 20 )
-        CloseButton.DoClick = function()
-            WarningFrame:Remove()
-            surface.PlaySound( "menusound.wav" )
-        end
-
-        local Text = vui( "DLabel", WarningFrame )
-        Text:SetPos( 50, 40 )
-        Text:SetText( "Недостаточно прав!" )
-        Text:SizeToContents()
-
+local function CreateCooldownMenu()
+    local frame = vgui.Create("DFrame")
+    frame:SetSize(600, 700)
+    frame:SetTitle("")
+    frame:SetSizable(false)
+    frame:Center()
+    frame:MakePopup()
+    frame:ShowCloseButton(false)
+    frame.Paint = function(self, w, h)
+        draw.RoundedBox(12, 0, 0, w, h, Color(20, 20, 30, 250))
         
-
-    else
-
-
-        local MainMenu = vui( "DFrame" )
-        MainMenu:SetPos(ScrW() / 2.90, ScrH() / 2.90)
-        MainMenu:SetSize( 600, 300 ) 
-        MainMenu:SetTitle( "" )  
-        MainMenu:SetDraggable( false ) 
-        MainMenu:ShowCloseButton( false ) 
-        MainMenu:MakePopup()
-        MainMenu.Paint = function(self, w, h)
-
-            draw.RoundedBox(20, 0, 0, w, h, Color(0, 0, 0, 225))
-
-
-            draw.RoundedBox(0, 186, 25, 3, 300, Color(0, 0, 0, 255))
-            draw.RoundedBox(0, 0, 25, 600, 3, Color(0, 0, 0, 255))
-            
-            draw.SimpleText("Установка кд", "FontWar", 300, 5, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-
-	    end
-
-
-        local CloseButton = vui( "DButton", MainMenu )
-        CloseButton:SetText( "Закрыть" )
-        CloseButton:SetPos( 490, 270 )
-        CloseButton:SetSize( 100, 20 )
-        CloseButton.DoClick = function()
-            MainMenu:Remove()
-            surface.PlaySound( "exitsound.mp3" )
-        end
-
-        local Texthelp = vui( "DLabel", MainMenu )
-        Texthelp:SetPos( 50, 30 )
-        Texthelp:SetText( "Список / Удалить" )
-        Texthelp:SizeToContents()
-
-        local Texthelp1 = vui( "DLabel", MainMenu )
-        Texthelp1:SetPos( 365, 59 )
-        Texthelp1:SetText( "- Название обьекта | Пример - combine_mine" )
-        Texthelp1:SizeToContents()
-
-        local Texthelp2 = vui( "DLabel", MainMenu )
-        Texthelp2:SetPos( 365, 91 )
-        Texthelp2:SetText( "- Кулдаун" )
-        Texthelp2:SizeToContents()
-
-        local Texthelp3 = vui( "DLabel", MainMenu )
-        Texthelp3:SetPos( 250, 30 )
-        Texthelp3:SetText( "Добавить" )
-        Texthelp3:SizeToContents()
-
-
-        local DScrollPanel = vui( "DScrollPanel", MainMenu ) 
-        DScrollPanel:Dock( LEFT ) 
-        DScrollPanel:SetWide(170)
-        DScrollPanel:DockMargin(0,28,0,28)
-
-        for _, v in ipairs(EntityTable) do
-            if v.name == "Не Удалять!Wаrning!" then
-            
-            else
-
-                local DButton = DScrollPanel:Add( "DButton" ) 
-                DButton:SetText( v.name.." - "..v.cooldown.." сек" )
-                DButton:Dock( TOP ) 
-                DButton:DockMargin( 0, 0, 0, 10 )
-                DButton.DoClick = function()
-                surface.PlaySound( "delete.mp3" )
-
-                net.Start( "SpawnSentKD_MenuTriggerTableDel" )
-                net.WriteString(v.name)
-                net.SendToServer()
-
-                DButton:Remove()
-                
-            end
-
-            end
-
-            
-        end
-
-
-
-        local NameEntry = vui("DTextEntry", MainMenu)
-        NameEntry:SetPos(200, 57)
-        NameEntry:SetSize(150, 20)
-        NameEntry:SetText("string")
-
-
-        local CooldownEntry = vui("DNumberWang", MainMenu)
-        CooldownEntry:SetPos(200, 89)
-        CooldownEntry:SetSize(150, 20)
-        CooldownEntry:SetMin(10)
-        CooldownEntry:SetMax(1000)
-        CooldownEntry:SetValue(10)
-
-
-        local AddEntryButton = vui("DButton", MainMenu)
-        AddEntryButton:SetText("Добавить в список")
-        AddEntryButton:SetPos(200, 120)
-        AddEntryButton:SetSize(150, 20)
-        AddEntryButton.DoClick = function()
-
-
-            surface.PlaySound( "menusound.wav" )
-            local NameEntryKD = NameEntry:GetValue()
-            local cooldownKD = CooldownEntry:GetValue()
-
-            NameEntry:SetText("string")
-            CooldownEntry:SetValue(10)
-
-            if NameEntryKD == "" then  
-                return 
-            end
-
-            if NameEntryKD == "string" then  
-                return 
-            end
-
-            if cooldownKD <= 0 then 
-                cooldownKD = 1
-            end
-
-            net.Start( "SpawnSentKD_MenuTriggerTable" ) 
-            net.WriteString(NameEntryKD) 
-            net.WriteFloat(cooldownKD) 
-            net.SendToServer()
-
-            MainMenu:Remove()
-
-            net.Start( "SpawnSentKD_MenuTriggerReturMenu" ) 
-            net.WritePlayer(plymenu) 
-            net.SendToServer()
-            
-
-        end
-
-
-
-
-
+        surface.SetDrawColor(70, 130, 255, 100)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        
+        draw.SimpleText("УПРАВЛЕНИЕ КУЛДАУНАМИ", "DermaLarge", w/2, 25, Color(220, 220, 255), TEXT_ALIGN_CENTER)
+        
+        surface.SetDrawColor(70, 130, 255, 80)
+        surface.DrawLine(50, 60, w-50, 60)
     end
+
+    local closeButton = vgui.Create("DButton", frame)
+    closeButton:SetSize(30, 30)
+    closeButton:SetPos(frame:GetWide() - 40, 10)
+    closeButton:SetText("×")
+    closeButton:SetFont("DermaLarge")
+    closeButton:SetTextColor(Color(255, 100, 100))
+    closeButton.Paint = function(self, w, h)
+        if self:IsHovered() then
+            draw.RoundedBox(8, 0, 0, w, h, Color(255, 100, 100, 30))
+        end
+    end
+    closeButton.DoClick = function()
+        frame:Close()
+    end
+
+    local addPanel = vgui.Create("DPanel", frame)
+    addPanel:SetPos(30, 80)
+    addPanel:SetSize(540, 120)
+    addPanel.Paint = function(self, w, h)
+        draw.RoundedBox(10, 0, 0, w, h, Color(30, 30, 40, 255))
+        surface.SetDrawColor(100, 150, 255, 150)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        
+        draw.SimpleText("ДОБАВИТЬ НОВЫЙ КУЛДАУН", "DermaDefaultBold", 15, 10, Color(200, 220, 255))
+    end
+
+    local nameEntry = vgui.Create("DTextEntry", addPanel)
+    nameEntry:SetPos(20, 35)
+    nameEntry:SetSize(500, 35)
+    nameEntry:SetPlaceholderText("Название ентити (например: prop_physics, weapon_pistol)")
+    nameEntry:SetFont("DermaDefault")
+    nameEntry.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Color(40, 40, 50))
+        surface.SetDrawColor(70, 130, 255, self:IsEditing() and 200 or 100)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        self:DrawTextEntryText(Color(255, 255, 255), Color(70, 130, 255), Color(255, 255, 255))
+    end
+
+    local cooldownEntry = vgui.Create("DTextEntry", addPanel)
+    cooldownEntry:SetPos(20, 80)
+    cooldownEntry:SetSize(240, 35)
+    cooldownEntry:SetPlaceholderText("Кулдаун в секундах")
+    cooldownEntry:SetNumeric(true)
+    cooldownEntry:SetFont("DermaDefault")
+    cooldownEntry.Paint = function(self, w, h)
+        draw.RoundedBox(8, 0, 0, w, h, Color(40, 40, 50))
+        surface.SetDrawColor(70, 130, 255, self:IsEditing() and 200 or 100)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        self:DrawTextEntryText(Color(255, 255, 255), Color(70, 130, 255), Color(255, 255, 255))
+    end
+
+    local addButton = vgui.Create("DButton", addPanel)
+    addButton:SetPos(280, 80)
+    addButton:SetSize(240, 35)
+    addButton:SetText("ДОБАВИТЬ")
+    addButton:SetFont("DermaDefaultBold")
+    addButton:SetTextColor(Color(255, 255, 255))
+    
+    local addButtonHover = 0
+    addButton.Paint = function(self, w, h)
+        local hover = math.min(addButtonHover + (self:IsHovered() and 3 or -3), 100)
+        addButtonHover = hover
+        
+        local glow = hover * 0.5
+        draw.RoundedBox(8, 0, 0, w, h, Color(40 + glow, 80 + glow, 180 + glow))
+        
+        surface.SetDrawColor(100, 180, 255, 100 + hover)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        
+        if self:IsHovered() then
+            draw.RoundedBox(8, -2, -2, w+4, h+4, Color(100, 180, 255, 20))
+        end
+    end
+    
+    addButton.DoClick = function()
+        local name = nameEntry:GetValue()
+        local cooldown = tonumber(cooldownEntry:GetValue())
+        
+        if name == "" or not cooldown or cooldown <= 0 then
+            Derma_Message("Заполните все поля корректно!", "Ошибка")
+            return
+        end
+        
+        net.Start("KD_AddEntity")
+        net.WriteString(name)
+        net.WriteUInt(cooldown, 16)
+        net.SendToServer()
+        
+        nameEntry:SetValue("")
+        cooldownEntry:SetValue("")
+        
+        timer.Simple(0.5, function()
+            if IsValid(frame) then
+                RefreshList()
+            end
+        end)
+    end
+
+    local listPanel = vgui.Create("DPanel", frame)
+    listPanel:SetPos(30, 220)
+    listPanel:SetSize(540, 430)
+    listPanel.Paint = function(self, w, h)
+        draw.RoundedBox(10, 0, 0, w, h, Color(30, 30, 40, 255))
+        surface.SetDrawColor(100, 150, 255, 150)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        
+        draw.SimpleText("СПИСОК КУЛДАУНОВ", "DermaDefaultBold", 15, 10, Color(200, 220, 255))
+    end
+
+    local scroll = vgui.Create("DScrollPanel", listPanel)
+    scroll:SetPos(10, 35)
+    scroll:SetSize(520, 385)
+
+    function RefreshList()
+        net.Start("KD_RequestList")
+        net.SendToServer()
+    end
+
+    net.Receive("KD_UpdateList", function()
+        local entities = net.ReadTable()
+        
+        scroll:Clear()
+        
+        for i, ent in ipairs(entities) do
+            local item = vgui.Create("DPanel", scroll)
+            item:SetPos(0, (i-1)*70)
+            item:SetSize(520, 65)
+            
+            local itemHover = 0
+            item.Paint = function(self, w, h)
+                local hover = math.min(itemHover + (self:IsHovered() and 3 or -3), 50)
+                itemHover = hover
+                
+                draw.RoundedBox(8, 0, 0, w, h, Color(35 + hover, 35 + hover, 45 + hover))
+                
+                surface.SetDrawColor(70, 130, 255, 80 + hover)
+                surface.DrawOutlinedRect(0, 0, w, h, 2)
+                
+                if self:IsHovered() then
+                    draw.RoundedBox(8, -2, -2, w+4, h+4, Color(70, 130, 255, 10))
+                end
+            end
+
+            local nameLabel = vgui.Create("DLabel", item)
+            nameLabel:SetPos(20, 12)
+            nameLabel:SetSize(400, 25)
+            nameLabel:SetText(ent.name:upper())
+            nameLabel:SetTextColor(Color(220, 240, 255))
+            nameLabel:SetFont("DermaDefaultBold")
+
+            local cooldownLabel = vgui.Create("DLabel", item)
+            cooldownLabel:SetPos(20, 35)
+            cooldownLabel:SetSize(400, 20)
+            cooldownLabel:SetText("Кулдаун: " .. ent.cooldown .. " секунд")
+            cooldownLabel:SetTextColor(Color(180, 200, 255))
+            cooldownLabel:SetFont("DermaDefault")
+
+            local deleteButton = vgui.Create("DButton", item)
+            deleteButton:SetPos(430, 15)
+            deleteButton:SetSize(80, 35)
+            deleteButton:SetText("УДАЛИТЬ")
+            deleteButton:SetFont("DermaDefault")
+            deleteButton:SetTextColor(Color(255, 255, 255))
+            
+            local deleteHover = 0
+            deleteButton.Paint = function(self, w, h)
+                local hover = math.min(deleteHover + (self:IsHovered() and 5 or -5), 80)
+                deleteHover = hover
+                
+                draw.RoundedBox(6, 0, 0, w, h, Color(180 + hover, 60, 60))
+                
+                surface.SetDrawColor(255, 100, 100, 150 + hover)
+                surface.DrawOutlinedRect(0, 0, w, h, 2)
+                
+                if self:IsHovered() then
+                    draw.RoundedBox(6, -2, -2, w+4, h+4, Color(255, 100, 100, 20))
+                end
+            end
+            
+            deleteButton.DoClick = function()
+                net.Start("KD_RemoveEntity")
+                net.WriteString(ent.name)
+                net.SendToServer()
+                
+                timer.Simple(0.5, function()
+                    if IsValid(frame) then
+                        RefreshList()
+                    end
+                end)
+            end
+        end
+        
+        scroll:InvalidateLayout()
+    end)
+
+    RefreshList()
+
+    local refreshButton = vgui.Create("DButton", frame)
+    refreshButton:SetPos(30, 660)
+    refreshButton:SetSize(540, 30)
+    refreshButton:SetText("ОБНОВИТЬ СПИСОК")
+    refreshButton:SetFont("DermaDefault")
+    refreshButton:SetTextColor(Color(255, 255, 255))
+    refreshButton.Paint = function(self, w, h)
+        draw.RoundedBox(6, 0, 0, w, h, Color(60, 60, 80))
+        surface.SetDrawColor(100, 150, 255, self:IsHovered() and 200 or 100)
+        surface.DrawOutlinedRect(0, 0, w, h, 2)
+        
+        if self:IsHovered() then
+            draw.RoundedBox(6, 0, 0, w, h, Color(70, 130, 255, 30))
+        end
+    end
+    refreshButton.DoClick = RefreshList
+end
+
+concommand.Add("kd_menu", CreateCooldownMenu)
+
+net.Receive("SpawnSentKD_Command", function()
+
+    RunConsoleCommand("kd_menu")
 
 end)
