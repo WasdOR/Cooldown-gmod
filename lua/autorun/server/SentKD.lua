@@ -1,147 +1,191 @@
-sql.Query("CREATE TABLE IF NOT EXISTS sentkd_cooldown_table (name TEXT PRIMARY KEY, cooldown INTEGER)")
-sql.Query("INSERT OR IGNORE INTO sentkd_cooldown_table (name, cooldown) VALUES ('Не Удалять!Wаrning!', 'Не Удалять!')")  --DONT TOUCH!
+sql.Query("CREATE TABLE IF NOT EXISTS kd_entities (name TEXT PRIMARY KEY, cooldown INTEGER)")
+util.AddNetworkString("KD_AddEntity")
+util.AddNetworkString("KD_RemoveEntity")
+util.AddNetworkString("KD_RequestList")
+util.AddNetworkString("KD_UpdateList")
+util.AddNetworkString("SpawnSentKD_StartMessage")
+util.AddNetworkString("SpawnSentKD_Message") 
+util.AddNetworkString("SpawnSentKD_")
+util.AddNetworkString("SpawnSentKD_Command")
 
-local EntityTable = sql.Query("SELECT * FROM sentkd_cooldown_table ")
-local playerCooldowns = {}
-local nets = util.AddNetworkString
+local Entities = {}
+local Cooldowns = {}
 
-nets("SpawnSentKD_")
-nets("SpawnSentKD_Message")
-nets("SpawnSentKD_StartMessage")
-nets("SpawnSentKD_MenuTrigger")
-nets("SpawnSentKD_MenuTriggerTable")
-nets("SpawnSentKD_MenuTriggerTableDel")
-nets("SpawnSentKD_MenuTriggerReturMenu")
-
-local function BlockEntitySpawn(ply, mdl) 
-    for _, v in pairs(EntityTable) do 
-        if string.match(mdl, v.name) then 
-
-            if playerCooldowns[ply:SteamID64()] and playerCooldowns[ply:SteamID64()][v.name] then 
-
-                net.Start("SpawnSentKD_Message") 
-                net.WriteString( playerCooldowns[ply:SteamID64()][v.name] ) 
-                net.Send(ply) 
-                return false  
-
-            else 
-
-                playerCooldowns[ply:SteamID64()] = playerCooldowns[ply:SteamID64()] or {} 
-                playerCooldowns[ply:SteamID64()][v.name] = v.cooldown  
-                net.Start("SpawnSentKD_StartMessage") 
-                net.WriteString( playerCooldowns[ply:SteamID64()][v.name] ) 
-                net.Send(ply) 
-
-                local playerTimer = timer.Create("spawnCooldown_" .. ply:SteamID64() .. "_" .. v.name, 1, 0, function() 
-                    playerCooldowns[ply:SteamID64()][v.name] = playerCooldowns[ply:SteamID64()][v.name] - 1 
-
-                    if playerCooldowns[ply:SteamID64()][v.name] <= 0 then 
-
-                        timer.Remove("spawnCooldown_" .. ply:SteamID64() .. "_" .. v.name)
-                        playerCooldowns[ply:SteamID64()][v.name] = nil
-                        net.Start("SpawnSentKD_")  
-                        net.Send(ply) 
-
-                    end 
-                    
-                end) 
-
-                return true 
-            end 
-        end 
-    end 
+local function LoadEntities()
+    local data = sql.Query("SELECT * FROM kd_entities") or {}
+    for _, row in ipairs(data) do
+        table.insert(Entities, {name = row.name, cooldown = tonumber(row.cooldown)})
+    end
 end
 
-net.Receive("SpawnSentKD_MenuTriggerTable", function()
+LoadEntities()
 
-    local NameEntryKD = net.ReadString()
-    local cooldownKD = net.ReadFloat()
+local function SaveEntity(name, cooldown)
+    sql.Query("INSERT OR REPLACE INTO kd_entities (name, cooldown) VALUES (" .. sql.SQLStr(name) .. ", " .. cooldown .. ")")
+end
 
-    table.insert(EntityTable, { name = NameEntryKD, cooldown = cooldownKD })
-    sql.Query("INSERT INTO sentkd_cooldown_table (name, cooldown) VALUES ('" .. NameEntryKD .. "', " .. cooldownKD .. ")")
+local function RemoveEntity(name)
+    sql.Query("DELETE FROM kd_entities WHERE name = " .. sql.SQLStr(name))
+end
 
-end)
+local function CheckCooldown(ply, model)
+    for _, ent in pairs(Entities) do
+        if string.match(model, ent.name) then
+            local steamID = ply:SteamID64()
+            local cooldown = Cooldowns[steamID] and Cooldowns[steamID][ent.name]
 
-net.Receive("SpawnSentKD_MenuTriggerTableDel", function(len, ply)
+            if cooldown then
+                ply:ChatPrint("Кулдаун: " .. cooldown .. " сек.")
+                return false
+            end
 
-    local namedel = net.ReadString()
-    local index = nil
-    for i, v in ipairs(EntityTable) do
-        if v.name == namedel then
-            index = i
+            Cooldowns[steamID] = Cooldowns[steamID] or {}
+            Cooldowns[steamID][ent.name] = ent.cooldown
+
+            ply:ChatPrint("Кулдаун начался: " .. ent.cooldown .. " сек.")
+
+            timer.Create("Cooldown_" .. steamID .. "_" .. ent.name, 1, ent.cooldown, function()
+                Cooldowns[steamID][ent.name] = Cooldowns[steamID][ent.name] - 1
+
+                if Cooldowns[steamID][ent.name] <= 0 then
+                    Cooldowns[steamID][ent.name] = nil
+                    ply:ChatPrint("Кулдаун закончился!")
+                end
+            end)
+
+            return true
         end
     end
+end
 
+net.Receive("KD_AddEntity", function(_, ply)
+    if not ply:IsAdmin() then return end
     
-    if index then
-       
-        table.remove(EntityTable, index)
-        sql.Query("DELETE FROM sentkd_cooldown_table WHERE name = '" .. namedel .. "'")
-
-    end
-
+    local name = net.ReadString()
+    local cooldown = net.ReadUInt(16)
+    
+    table.insert(Entities, {name = name, cooldown = cooldown})
+    SaveEntity(name, cooldown)
 end)
 
-net.Receive("SpawnSentKD_MenuTriggerReturMenu", function()
-
-    local plymenu = net.ReadPlayer()
-    local Priva = plymenu:GetUserGroup()
-
-    net.Start("SpawnSentKD_MenuTrigger")
-    net.WriteString(Priva)
-    net.WriteTable(EntityTable)
-    net.WritePlayer(plymenu)
-    net.Send(plymenu)
-
-end)
-
-hook.Add("PlayerDisconnected", "PlayerleaveKD", function(ply)
-    if playerCooldowns[ply:SteamID64()] then
-        for k, _ in pairs(playerCooldowns[ply:SteamID64()]) do
-            timer.Remove("spawnCooldown_" .. ply:SteamID64() .. "_" .. k)
+net.Receive("KD_RemoveEntity", function(_, ply)
+    if not ply:IsAdmin() then return end
+    
+    local name = net.ReadString()
+    
+    for i, ent in ipairs(Entities) do
+        if ent.name == name then
+            table.remove(Entities, i)
+            RemoveEntity(name)
+            break
         end
-        playerCooldowns[ply:SteamID64()] = nil
     end
 end)
 
-hook.Add( "PlayerInitialSpawn", "PlayerJoinKD", function(ply)
+net.Receive("KD_RequestList", function(_, ply)
+    if not ply:IsAdmin() then return end
     
-    if playerCooldowns[ply:SteamID64()] and playerCooldowns[ply:SteamID64()][v.name] then    
+    net.Start("KD_UpdateList")
+    net.WriteTable(Entities)
+    net.Send(ply)
+end)
 
-        timer.Remove("spawnCooldown_" .. ply:SteamID64())
-        playerCooldowns[ply:SteamID64()] = nil
-        playerCooldowns[ply:SteamID64()][v.name] = nil
 
+local function CheckCooldown(ply, model)
+    for _, ent in pairs(Entities) do
+        if string.match(model, ent.name) then
+            local steamID = ply:SteamID64()
+            local cooldown = Cooldowns[steamID] and Cooldowns[steamID][ent.name]
+
+            if cooldown then
+                net.Start("SpawnSentKD_Message")
+                net.WriteString(cooldown)
+                net.Send(ply)
+                return false
+            end
+
+            Cooldowns[steamID] = Cooldowns[steamID] or {}
+            Cooldowns[steamID][ent.name] = ent.cooldown
+
+            net.Start("SpawnSentKD_StartMessage")
+            net.WriteString(ent.cooldown)
+            net.Send(ply)
+
+            timer.Create("Cooldown_" .. steamID .. "_" .. ent.name, 1, ent.cooldown, function()
+                Cooldowns[steamID][ent.name] = Cooldowns[steamID][ent.name] - 1
+
+                if Cooldowns[steamID][ent.name] <= 0 then
+                    Cooldowns[steamID][ent.name] = nil
+                    net.Start("SpawnSentKD_")
+                    net.Send(ply)
+                end
+            end)
+
+            return true
+        end
     end
+end
 
-end )
+local function UpdateDuplicatorRestrictions()
+    for _, ent in pairs(Entities) do
+        duplicator.Disallow(ent.name)
+    end
+end
 
-hook.Add( "PlayerSay", "OpenMenuSay", function( ply, text )
+UpdateDuplicatorRestrictions()
 
-    local Priva = ply:GetUserGroup()
+net.Receive("KD_AddEntity", function(_, ply)
+    if not ply:IsAdmin() then return end
     
+    local name = net.ReadString()
+    local cooldown = net.ReadUInt(16)
+    
+    table.insert(Entities, {name = name, cooldown = cooldown})
+    SaveEntity(name, cooldown)
+    
+    duplicator.Disallow(name)
+end)
 
-	if ( string.lower( text ) == "!kd" ) then
-		
-        net.Start("SpawnSentKD_MenuTrigger")
-        net.WriteString(Priva)
-        net.WriteTable(EntityTable)
-        net.WritePlayer(ply)
+net.Receive("KD_RemoveEntity", function(_, ply)
+    if not ply:IsAdmin() then return end
+    
+    local name = net.ReadString()
+    
+    for i, ent in ipairs(Entities) do
+        if ent.name == name then
+            table.remove(Entities, i)
+            RemoveEntity(name)
+            break
+        end
+    end
+    
+    UpdateDuplicatorRestrictions()
+end)
+
+hook.Add("PlayerDisconnected", "CleanupCooldowns", function(ply)
+    local steamID = ply:SteamID64()
+    if Cooldowns[steamID] then
+        for name in pairs(Cooldowns[steamID]) do
+            timer.Remove("Cooldown_" .. steamID .. "_" .. name)
+        end
+        Cooldowns[steamID] = nil
+    end
+end)
+
+hook.Add( "PlayerSay", "CoinFlip", function( ply, text )
+	if string.lower( text ) == "!kd" then
+		net.Start("SpawnSentKD_Command")
         net.Send(ply)
-        
-  
+		return ""
 	end
 end )
+hook.Add("PlayerSpawnSENT", "SpawnCooldown", CheckCooldown)
+hook.Add("PlayerSpawnProp", "SpawnCooldown", CheckCooldown)
+hook.Add("PlayerSpawnRagdoll", "SpawnCooldown", CheckCooldown)
+hook.Add("PlayerSpawnNPC", "SpawnCooldown", CheckCooldown)
+hook.Add("PlayerSpawnSWEP", "SpawnCooldown", CheckCooldown)
+hook.Add("PlayerGiveSWEP", "SpawnCooldown", CheckCooldown)
 
-hook.Add("PlayerSpawnSENT", "SpawnSent_Kd_", BlockEntitySpawn)
-hook.Add("PlayerSpawnProp", "SpawnProp_Kd_", BlockEntitySpawn)
-hook.Add("PlayerSpawnRagdoll", "SpawnRag_Kd_", BlockEntitySpawn)
-hook.Add("PlayerSpawnNPC", "SpawnNpc_Kd_", BlockEntitySpawn)
-hook.Add("PlayerSpawnSWEP", "SpawnSwep_Kd_", BlockEntitySpawn)
-hook.Add( "PlayerGiveSWEP", "BlockPlayerSWEPs_kd_", BlockEntitySpawn)
-
-
-
-
-print("---Cooldown_Loaded!---")
-print("---By WasDiK---")
+print("--- By Babai LOL ---")
+print("--- By WasDiK Ebaniy ROT! ---")
+print("--- Cooldown System Loaded ---")
